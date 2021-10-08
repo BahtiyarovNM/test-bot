@@ -80,8 +80,8 @@ def new_question(update, context):
     ioq = is_opened_question.get(new_chat_id)
     if ioq == None or ioq <= 0:
         print('new Q')
-        custom_keyboard = [['/problem closed']] # custom_keyboard,
-        reply_markup = ReplyKeyboardMarkup( one_time_keyboard=False, resize_keyboard=True)
+        custom_keyboard = [['/problem_closed']] # custom_keyboard,
+        reply_markup = ReplyKeyboardMarkup( keyboard=custom_keyboard,one_time_keyboard=False, resize_keyboard=True)
         update.message.reply_text("Опишите свой вопрос и нажмите отправить", reply_markup=reply_markup)
     #     Спасибо за вопрос. В ближайшее время Вам ответит первый из освободившихся специалистов.    
         user_info = update.message.from_user.to_dict()
@@ -164,7 +164,7 @@ def forward_to_chat(update, context):
     print('fwd2chat')
     new_chat_id = update.message.chat_id
     custom_keyboard = [['/ask_question']]
-    reply_markup = ReplyKeyboardMarkup(custom_keyboard, one_time_keyboard=False, resize_keyboard=True)
+    reply_markup = ReplyKeyboardMarkup(keyboard=custom_keyboard, one_time_keyboard=False, resize_keyboard=True)
     ioq = is_opened_question.get(new_chat_id)
     if  ioq == None or ioq <= 0:
         update.message.reply_text(
@@ -173,7 +173,7 @@ def forward_to_chat(update, context):
         return
     elif ioq == 1:
         custom_keyboard = [['/problem_closed']]
-        reply_markup = ReplyKeyboardMarkup(custom_keyboard, one_time_keyboard=False, resize_keyboard=True)
+        reply_markup = ReplyKeyboardMarkup(keyboard=custom_keyboard, one_time_keyboard=False, resize_keyboard=True)
         update.message.reply_text(
             'Сообщение не доставлено. Задайте вопрос повторно.',
             reply_markup=reply_markup)
@@ -185,17 +185,29 @@ def forward_to_chat(update, context):
 #         cht = context.bot.getChat(TELEGRAM_SUPERCHAT_ID)
 #         pndmsg = cht.pinned_message
         last_message_id = lastMsg[new_chat_id]
-        new_message = context.bot.send_message(
-            chat_id=TELEGRAM_SUPERCHAT_ID,
-            text=update.message.text,
-            reply_to_message_id=last_message_id
-#             reply_to_message_id=pndmsg.message_id
-        )
+        # print(lastMsg)
+        # print(update.message)
+        # context.bot.send_message()
+#         new_message = context.bot.send_message(
+#             chat_id=TELEGRAM_SUPERCHAT_ID,
+#             # text=update.message.text,
+#             reply_to_message_id=last_message_id,
+#             msg=update.message
+# #             reply_to_message_id=pndmsg.message_id
+#         )
+        # new_message = update.message.forward(chat_id=TELEGRAM_SUPERCHAT_ID)
 #         new_chat_id = update.message.chat_id
 #         new_user_id = user_info['id']
+        print(lastMsg)
+        new_message = context.bot.copy_message(
+            chat_id=TELEGRAM_SUPERCHAT_ID,
+            reply_to_message_id=last_message_id,
+            message_id=update.message.message_id,
+            from_chat_id=update.message.chat_id
+        )
         new_message_id = new_message.message_id
         msgId2chatId[new_message_id] = new_chat_id
-        lastMsg[new_chat_id] = new_message_id
+        # lastMsg[new_chat_id] = new_message_id
         print("fwd2chat ", new_chat_id, "OK")
         
     
@@ -233,12 +245,21 @@ def forward_to_user(update, context):
     elif ioq == 2:
 #     user_chat_id = update.message.reply_to_message.forward_from.id
 #         new_message =
-        update.message.forward(chat_id=user_chat_id)
+#         update.message.forward(chat_id=user_chat_id)
+
+        last_message_id = lastMsg[new_chat_id]
+
+        new_message = context.bot.copy_message(
+            chat_id=user_chat_id,
+            # reply_to_message_id=last_message_id,
+            message_id=update.message.message_id,
+            from_chat_id=update.message.chat_id
+        )
 #         new_chat_id = update.message.reply_to_message.chat_id #
-        new_message_id = update.message.message_id
+        new_message_id = new_message.message_id
 #         new_message_id = new_message.message_id
         msgId2chatId[new_message_id] = new_chat_id
-        lastMsg[new_chat_id] = new_message_id
+        # lastMsg[new_chat_id] = new_message_id
         print("fwd2user ", new_chat_id, "OK")
         
 #     context.bot.copy_message(

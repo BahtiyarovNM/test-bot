@@ -2,3 +2,5 @@ python-telegram-bot
 
 # for .env file support
 python-dotenv
+pymysql
+requests

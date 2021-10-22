@@ -5,6 +5,7 @@ from telegram.ext import CommandHandler, MessageHandler, Filters, CallbackQueryH
 from telegram import ForceReply, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 
 from settings import WELCOME_MESSAGE, TELEGRAM_SUPPORT_CHAT_ID, TELEGRAM_SUPERCHAT_ID
+from db import *
 
 msgId2chatId = dict()
 # (forward_from) connect message_id from chat to chat_id user's chat
@@ -52,10 +53,22 @@ def start(update, context):
     #     update.message.reply_text(WELCOME_MESSAGE, reply_markup=ForceReply(force_reply=True, input_field_placeholder = "Задайте свой вопрос"))
     print('/start')
     logIT()
+    user_telegram_id = update.message.from_user.id
+    if not check_by_telegram_id(user_telegram_id):
+        custom_keyboard = []
+        reply_markup = ReplyKeyboardMarkup(custom_keyboard, one_time_keyboard=False, resize_keyboard=True)
+        update.message.reply_text(
+            'Добро пожаловать в ряды студентов Академии Нутрициологии💚\n\nРады приветствовать в боте-куратора, где ты можешь задавать вопросы и получать ответы от врачей превентивной медицины.\n⠀\n⁉️Запустив в бот, ты соглашаешься с его правилами:⁉️\n⠀\n📍стараться формулировать вопросы в рамках обучающей программы: нутрициология, физиология, диетология и т.д.\n⠀\n📍запрещены консультации по заболеваниям, которые не проходили на курсе, так они требуют врачебного подхода и индивидуального рассмотрения\n⠀\n📍запрещены консультации по препаратам и БАДам, которые не проходили на курсе, но постараемся найти для вас актуальную научную информацию.',
+            reply_markup=reply_markup)
+        update.message.reply_text(
+            'Перед началом работы надо авторизоваться. Введите свой номер телефона, записанный на платформе',
+            reply_markup=reply_markup)
+        return
+
     custom_keyboard = [['Задать вопрос']]
     reply_markup = ReplyKeyboardMarkup(custom_keyboard, one_time_keyboard=False, resize_keyboard=True)
     update.message.reply_text(
-        'Добро пожаловать в ряды студентов Академии Нутрициологии💚\n\nРады приветствовать в боте-куратора, где ты можешь задавать вопросы и получать ответы от врачей превентивной медицины.\n⠀\n⁉️Запустив в бот, ты соглашаешься с его правилами:⁉️\n⠀\n📍стараться формулировать вопросы в рамках обучающей программы: нутрициология, физиология, диетология и т.д.\n⠀\n📍запрещены консультации по заболеваниям, которые не проходили на курсе, так они требуют врачебного подхода и индивидуального рассмотрения\n⠀\n📍запрещены консультации по препаратам и БАДам, которые не проходили на курсе, но постараемся найти для вас актуальную научную информацию.\n\nНажимай кнопку "Задать вопрос" и получи первый ответ)',
+        'Добро 1 пожаловать в ряды студентов Академии Нутрициологии💚\n\nРады приветствовать в боте-куратора, где ты можешь задавать вопросы и получать ответы от врачей превентивной медицины.\n⠀\n⁉️Запустив в бот, ты соглашаешься с его правилами:⁉️\n⠀\n📍стараться формулировать вопросы в рамках обучающей программы: нутрициология, физиология, диетология и т.д.\n⠀\n📍запрещены консультации по заболеваниям, которые не проходили на курсе, так они требуют врачебного подхода и индивидуального рассмотрения\n⠀\n📍запрещены консультации по препаратам и БАДам, которые не проходили на курсе, но постараемся найти для вас актуальную научную информацию.\n\nНажимай кнопку "Задать вопрос" и получи первый ответ)',
         reply_markup=reply_markup)
 
 
@@ -86,6 +99,10 @@ def new_question(update, context):
     #     text = callback_query.message.text
     #     data = callback_query.data
     new_chat_id = update.message.from_user.id
+    if not check_by_telegram_id(new_chat_id):
+        update.message.reply_text(
+            'Вы не авторизованы')
+        return
     ioq = is_opened_question.get(new_chat_id)
     is_estimate_described[new_chat_id] = True
     if ioq == None or ioq <= 0:
@@ -163,24 +180,9 @@ def close_problem(update, context):
         reply_markup = ReplyKeyboardMarkup(custom_keyboard, one_time_keyboard=False, resize_keyboard=True)
         update.message.reply_text("Вопрос закрыт", reply_markup=reply_markup)
 def forward_to_chat(update, context):
-    """{ 
-        'message_id': 5, 
-        'date': 1605106546, 
-        'chat': {'id': 49820636, 'type': 'private', 'username': 'danokhlopkov', 'first_name': 'Daniil', 'last_name': 'Okhlopkov'}, 
-        'text': 'TEST QOO', 'entities': [], 'caption_entities': [], 'photo': [], 'new_chat_members': [], 'new_chat_photo': [], 'delete_chat_photo': False, 'group_chat_created': False, 'supergroup_chat_created': False, 'channel_chat_created': False, 
-        'from': {'id': 49820636, 'first_name': 'Daniil', 'is_bot': False, 'last_name': 'Okhlopkov', 'username': 'danokhlopkov', 'language_code': 'en'}
-    }"""
-    #   user_chat_id = update.message.reply_to_message.forward_from.id
-    #     c_id = update.message.chat_id
-    #     m_id = context.bot.copy_message(
-    #         message_id=update.message.message_id,
-    #         chat_id=TELEGRAM_SUPERCHAT_ID,
-    #         from_chat_id=c_id
-    # #         update.message.chat_id
-    #     )
-    #     msgId2chatId[m_id] = c_id
     print('fwd2chat')
     new_chat_id = update.message.chat_id
+    user_telegram_id = update.message.from_user.id
     custom_keyboard = [['Задать вопрос']]
     reply_markup = ReplyKeyboardMarkup(keyboard=custom_keyboard, one_time_keyboard=False, resize_keyboard=True)
     ioq = is_opened_question.get(new_chat_id)
@@ -192,6 +194,23 @@ def forward_to_chat(update, context):
             reply_markup=reply_markup)
         return
     if ioq == None or ioq <= 0:
+
+        if not check_by_telegram_id(user_telegram_id):
+            user_in_system = check_and_insert(update.message.text,user_telegram_id)
+            if user_in_system is None:
+                update.message.reply_text(
+                    'Не найдено активного курса с таким номером')
+                return
+            elif not user_in_system:
+                update.message.reply_text(
+                    'Номер уже активирован')
+                return
+            elif user_in_system:
+                update.message.reply_text(
+                    'Чтобы задать вопрос нажмите кнопку "Задать вопрос"',
+                    reply_markup=reply_markup)
+            return
+
         update.message.reply_text(
             'Чтобы задать вопрос нажмите кнопку "Задать вопрос"',
             reply_markup=reply_markup)
@@ -204,25 +223,9 @@ def forward_to_chat(update, context):
             reply_markup=reply_markup)
         return
     elif ioq == 2:
-        #         update.message.forward(chat_id=TELEGRAM_SUPERCHAT_ID)
-        #         new_user_id = update.message.from.id
 
-        #         cht = context.bot.getChat(TELEGRAM_SUPERCHAT_ID)
-        #         pndmsg = cht.pinned_message
         last_message_id = lastMsg[new_chat_id]
-        # print(lastMsg)
-        # print(update.message)
-        # context.bot.send_message()
-        #         new_message = context.bot.send_message(
-        #             chat_id=TELEGRAM_SUPERCHAT_ID,
-        #             # text=update.message.text,
-        #             reply_to_message_id=last_message_id,
-        #             msg=update.message
-        # #             reply_to_message_id=pndmsg.message_id
-        #         )
-        # new_message = update.message.forward(chat_id=TELEGRAM_SUPERCHAT_ID)
-        #         new_chat_id = update.message.chat_id
-        #         new_user_id = user_info['id']
+
         print(lastMsg)
         new_message = context.bot.copy_message(
             chat_id=TELEGRAM_SUPERCHAT_ID,
@@ -366,3 +369,6 @@ def first_submenu(bot, update):
             is_estimate_described[bot.callback_query.message.chat_id] = False
     else:
         bot.callback_query.message.reply_text("Оценка уже поставлена", reply_markup=reply_markup)
+
+def auth(user_telegram_id):
+    is_found = check_by_telegram_id(user_telegram_id)

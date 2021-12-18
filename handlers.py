@@ -7,52 +7,32 @@ from telegram import ForceReply, ReplyKeyboardMarkup, InlineKeyboardButton, Inli
 from settings import WELCOME_MESSAGE, TELEGRAM_SUPPORT_CHAT_ID, TELEGRAM_SUPERCHAT_ID
 from db import *
 
-msgId2chatId = dict()
-# (forward_from) connect message_id from chat to chat_id user's chat
+user_questions = dict()
+main_channel = int(-1001525702468)
+main_chat = int(-1001610448157)
 
-lastMsg = dict()
-# last message in SUPERCHAT for this user's question. Connect users and last message for their chat
+curators = {
+    -1001764887260: -1001530512275,
+    -1001178196959: -1001526061429,
+    -1001198171192: -1001198171192,
+}
 
-# from functools import wraps
+curators_queue = list(curators.keys())
+def __init__(self):
+    global main_channel
+    global main_chat
+    global user_questions
+    global curators
+    global curators_queue
+    user_questions[0] = 1
 
-is_opened_question = dict()
-g_chat_id = 0
-g_message = None
-
-is_estimated = dict()
-is_estimate_described = dict()
-
-
-# def restricted(func):
-#     @wraps(func)
-#     def wrapped(update, context, *args, **kwargs):
-#         user_id = update.effective_user.id
-#         new_chat_id = update.message.chat_id
-#         ioq = is_opened_question.get(new_chat_id)
-#         if  ioq == None or ioq <= 0:
-#             print("Unauthorized access denied for {}.".format(user_id))
-#             return
-#         return func(update, context, *args, **kwargs)
-#     return wrapped
-
-def logIT():
-    print('is_opened_question')
-    print(is_opened_question)
-    print('msgId2chatId')
-    print(msgId2chatId)
-    print('lastMsg')
-    print(lastMsg)
-    print('g_chat_id')
-    print(g_chat_id)
-
-
-#     print('g_message')
-#     print(g_message)
 
 def start(update, context):
     #     update.message.reply_text(WELCOME_MESSAGE, reply_markup=ForceReply(force_reply=True, input_field_placeholder = "Задайте свой вопрос"))
     print('/start')
-    logIT()
+    custom_keyboard = [['Задать вопрос']]
+    reply_markup = ReplyKeyboardMarkup(custom_keyboard, one_time_keyboard=False, resize_keyboard=True)
+
     user_telegram_id = update.message.from_user.id
     if not check_by_telegram_id(user_telegram_id):
         custom_keyboard = []
@@ -65,284 +45,174 @@ def start(update, context):
             reply_markup=reply_markup)
         return
 
-    custom_keyboard = [['Задать вопрос']]
-    reply_markup = ReplyKeyboardMarkup(custom_keyboard, one_time_keyboard=False, resize_keyboard=True)
     update.message.reply_text(
-        'Добро 1 пожаловать в ряды студентов Академии Нутрициологии💚\n\nРады приветствовать в боте-куратора, где ты можешь задавать вопросы и получать ответы от врачей превентивной медицины.\n⠀\n⁉️Запустив в бот, ты соглашаешься с его правилами:⁉️\n⠀\n📍стараться формулировать вопросы в рамках обучающей программы: нутрициология, физиология, диетология и т.д.\n⠀\n📍запрещены консультации по заболеваниям, которые не проходили на курсе, так они требуют врачебного подхода и индивидуального рассмотрения\n⠀\n📍запрещены консультации по препаратам и БАДам, которые не проходили на курсе, но постараемся найти для вас актуальную научную информацию.\n\nНажимай кнопку "Задать вопрос" и получи первый ответ)',
+        'Добро пожаловать в ряды студентов Академии Нутрициологии💚\n\nРады приветствовать в боте-куратора, где ты можешь задавать вопросы и получать ответы от врачей превентивной медицины.\n⠀\n⁉️Запустив в бот, ты соглашаешься с его правилами:⁉️\n⠀\n📍стараться формулировать вопросы в рамках обучающей программы: нутрициология, физиология, диетология и т.д.\n⠀\n📍запрещены консультации по заболеваниям, которые не проходили на курсе, так они требуют врачебного подхода и индивидуального рассмотрения\n⠀\n📍запрещены консультации по препаратам и БАДам, которые не проходили на курсе, но постараемся найти для вас актуальную научную информацию.\n\nНажимай кнопку "Задать вопрос" и получи первый ответ)',
         reply_markup=reply_markup)
 
-
-#     buttons = [
-#         [
-#             InlineKeyboardButton("Задать Вопрос", callback_data="Задать Вопрос")
-#         ]
-#     ]
-#     reply_markup = InlineKeyboardMarkup(buttons)
-
-#     update.message.reply_text(
-#         WELCOME_MESSAGE,
-#         reply_markup=reply_markup,
-#         quote=True
-#     )    
-
-#     user_info = update.message.from_user.to_dict()
-#     context.bot.send_message(
-#         chat_id=TELEGRAM_SUPPORT_CHAT_ID,
-#         text=f"""
-# 📞 Connected {user_info}.
-#         """
-#     )
-
-def new_question(update, context):
-    #     callback_query = update.callback_query
-    #     callback_query.answer()
-    #     text = callback_query.message.text
-    #     data = callback_query.data
-    new_chat_id = update.message.from_user.id
-    if not check_by_telegram_id(new_chat_id):
-        update.message.reply_text(
-            'Вы не авторизованы')
-        return
-    ioq = is_opened_question.get(new_chat_id)
-    is_estimate_described[new_chat_id] = True
-    if ioq == None or ioq <= 0:
-
-        print('new Q')
-        custom_keyboard = [['Вопрос решен']]  # custom_keyboard,
-        reply_markup = ReplyKeyboardMarkup(keyboard=custom_keyboard, one_time_keyboard=False, resize_keyboard=True)
-        update.message.reply_text("Опишите свой вопрос и нажмите отправить", reply_markup=reply_markup)
-        #     Спасибо за вопрос. В ближайшее время Вам ответит первый из освободившихся специалистов.
-        user_info = update.message.from_user.to_dict()
-
-        #         global is_opened_question
-        is_opened_question[new_chat_id] = 3
-    elif ioq > 0:
-        custom_keyboard = [['Вопрос решен']]
-        reply_markup = ReplyKeyboardMarkup(custom_keyboard, one_time_keyboard=False, resize_keyboard=True)
-        update.message.reply_text(
-            'У вас уже открыт вопрос. Опишите свой вопрос и нажмите отправить',
-            reply_markup=reply_markup)
-        return
-    logIT()
-
-
-def update_pinned(update, context):  ##############
-    #     new_user_id = user_info['id']
-    global g_chat_id
-    new_chat_id = g_chat_id
-    cht = context.bot.getChat(TELEGRAM_SUPERCHAT_ID)
-    pndmsg = cht.pinned_message
-    check_message_id = pndmsg.forward_from_message_id  # forward_from.chat_id # forward_from_chat.id
-    global g_message
-    check_g_message_id = g_message.message_id
-    global is_opened_question  #
-    is_opened_question[new_chat_id] = 2  #
-    is_estimated[new_chat_id] = False
-    print("pin", check_message_id, check_g_message_id)
-    new_message_id = pndmsg.message_id  # new_message.message_id ########### lazha # test
-    if check_g_message_id == check_message_id:
-        msgId2chatId[new_message_id] = new_chat_id
-        lastMsg[new_chat_id] = new_message_id
-        print("pin OK")
-
-
-#     update.message.forward(chat_id=TELEGRAM_SUPPORT_CHAT_ID)
-#     callback_query
-
-def close_problem(update, context):
-    print('Close problem')
-    new_chat_id = update.message.from_user.id  #
-    ioq = is_opened_question.get(new_chat_id)
-    print(ioq)
-    if ioq == 2:
-        custom_keyboard = [['Задать вопрос']]
-        reply_markup = ReplyKeyboardMarkup(custom_keyboard, one_time_keyboard=False, resize_keyboard=True)
-        reply_markup = on_end_estimate_keyboard()
-        update.message.reply_text("Вопрос закрыт, поставьте оценку", reply_markup=reply_markup)
-        new_chat_id = update.message.chat_id
-        last_message_id = lastMsg[new_chat_id]
-        #         global is_opened_question
-        is_opened_question[new_chat_id] = -1
-        #     is_opened_question.pop(new_chat_id)   # add it later
-        context.bot.send_message(
-            chat_id=TELEGRAM_SUPERCHAT_ID,
-            text='Вопрос закрыт пользователем',
-            reply_to_message_id=last_message_id
-        )
-
-        is_opened_question.pop(new_chat_id, None)
-    elif ioq == 3:
-        custom_keyboard = [['Вопрос решен']]
-        reply_markup = ReplyKeyboardMarkup(custom_keyboard, one_time_keyboard=False, resize_keyboard=True)
-        update.message.reply_text("Вы не задали свой вопрос", reply_markup=reply_markup)
-    elif ioq == None:
-        custom_keyboard = [['Задать вопрос']]
-        reply_markup = ReplyKeyboardMarkup(custom_keyboard, one_time_keyboard=False, resize_keyboard=True)
-        update.message.reply_text("Вопрос закрыт", reply_markup=reply_markup)
-def forward_to_chat(update, context):
-    print('fwd2chat')
-    new_chat_id = update.message.chat_id
-    user_telegram_id = update.message.from_user.id
-    custom_keyboard = [['Задать вопрос']]
-    reply_markup = ReplyKeyboardMarkup(keyboard=custom_keyboard, one_time_keyboard=False, resize_keyboard=True)
-    ioq = is_opened_question.get(new_chat_id)
-    if is_estimate_described.get(new_chat_id) != None and not is_estimate_described[new_chat_id]:
-        is_estimate_described[new_chat_id] = True
-
-        update.message.reply_text(
-            'Спасибо за ответ',
-            reply_markup=reply_markup)
-        return
-    if ioq == None or ioq <= 0:
-
-        if not check_by_telegram_id(user_telegram_id):
-            user_in_system = check_and_insert(update.message.text,user_telegram_id)
-            if user_in_system is None:
-                update.message.reply_text(
-                    'Не найдено активного курса с таким номером')
-                return
-            elif not user_in_system:
-                update.message.reply_text(
-                    'Номер уже активирован')
-                return
-            elif user_in_system:
-                update.message.reply_text(
-                    'Чтобы задать вопрос нажмите кнопку "Задать вопрос"',
-                    reply_markup=reply_markup)
-            return
-
-        update.message.reply_text(
-            'Чтобы задать вопрос нажмите кнопку "Задать вопрос"',
-            reply_markup=reply_markup)
-        return
-    elif ioq == 1:
-        custom_keyboard = [['Вопрос решен']]
-        reply_markup = ReplyKeyboardMarkup(keyboard=custom_keyboard, one_time_keyboard=False, resize_keyboard=True)
-        update.message.reply_text(
-            'Сообщение не доставлено. Задайте вопрос повторно.',
-            reply_markup=reply_markup)
-        return
-    elif ioq == 2:
-
-        last_message_id = lastMsg[new_chat_id]
-
-        print(lastMsg)
-        new_message = context.bot.copy_message(
-            chat_id=TELEGRAM_SUPERCHAT_ID,
-            reply_to_message_id=last_message_id,
-            message_id=update.message.message_id,
-            from_chat_id=update.message.chat_id
-        )
-        new_message_id = new_message.message_id
-        msgId2chatId[new_message_id] = new_chat_id
-        # lastMsg[new_chat_id] = new_message_id
-        print("fwd2chat ", new_chat_id, "OK")
-    elif ioq == 3:
-
-        # new_message = context.bot.send_message(
-        #     chat_id=TELEGRAM_SUPPORT_CHAT_ID,
-        #     text=f"""Новый вопрос от пользователя {user_info}."""
-        #     #       как отправить сам вопрос пока хз, есть вариант убрать кнопку задать вопрос
-        # )
-        new_message = context.bot.copy_message(
-            chat_id=TELEGRAM_SUPPORT_CHAT_ID,
-            # reply_to_message_id=last_message_id,
-            message_id=update.message.message_id,
-            from_chat_id=update.message.chat_id
-        )
-        global g_chat_id
-        g_chat_id = new_chat_id = update.message.chat_id
-        global g_message
-        g_message = new_message
-        is_opened_question[new_chat_id] = 3
-
-
-def forward_to_user(update, context):
-    """{
-        'message_id': 10, 'date': 1605106662, 
-        'chat': {'id': -484179205, 'type': 'group', 'title': '☎️ SUPPORT CHAT', 'all_members_are_administrators': True}, 
-        'reply_to_message': {
-            'message_id': 9, 'date': 1605106659, 
-            'chat': {'id': -484179205, 'type': 'group', 'title': '☎️ SUPPORT CHAT', 'all_members_are_administrators': True}, 
-            'forward_from': {'id': 49820636, 'first_name': 'Daniil', 'is_bot': False, 'last_name': 'Okhlopkov', 'danokhlopkov': 'okhlopkov', 'language_code': 'en'}, 
-            'forward_date': 1605106658, 
-            'text': 'g', 'entities': [], 'caption_entities': [], 'photo': [], 'new_chat_members': [], 'new_chat_photo': [], 
-            'delete_chat_photo': False, 'group_chat_created': False, 'supergroup_chat_created': False, 'channel_chat_created': False, 
-            'from': {'id': 1440913096, 'first_name': 'SUPPORT', 'is_bot': True, 'username': 'lolkek'}
-        }, 
-        'text': 'ggg', 'entities': [], 'caption_entities': [], 'photo': [], 'new_chat_members': [], 'new_chat_photo': [], 'delete_chat_photo': False, 
-        'group_chat_created': False, 'supergroup_chat_created': False, 'channel_chat_created': False, 
-        'from': {'id': 49820636, 'first_name': 'Daniil', 'is_bot': False, 'last_name': 'Okhlopkov', 'username': 'danokhlopkov', 'language_code': 'en'}
-    }"""
-    print('fwd2user')
-    new_message_id = update.message.reply_to_message.message_id
-    new_chat_id = user_chat_id = msgId2chatId[new_message_id]
-    ioq = is_opened_question.get(new_chat_id)
-
-    if ioq == None or ioq <= 0:
-        update.message.reply_text('Вопрос закрыт пользователем')
-        return
-    elif ioq == 1:
-        custom_keyboard = [['Вопрос решен']]
-        reply_markup = ReplyKeyboardMarkup(custom_keyboard, one_time_keyboard=False, resize_keyboard=True)
-        update.message.reply_text(
-            'Сообщение не доставлено. Задайте вопрос повторно.',
-            reply_markup=reply_markup)
-        return
-    elif ioq == 2:
-        #     user_chat_id = update.message.reply_to_message.forward_from.id
-        #         new_message =
-        #         update.message.forward(chat_id=user_chat_id)
-
-        last_message_id = lastMsg[new_chat_id]
-
-        new_message = context.bot.copy_message(
-            chat_id=user_chat_id,
-            # reply_to_message_id=last_message_id,
-            message_id=update.message.message_id,
-            from_chat_id=update.message.chat_id
-        )
-        #         new_chat_id = update.message.reply_to_message.chat_id #
-        new_message_id = new_message.message_id
-        #         new_message_id = new_message.message_id
-        msgId2chatId[new_message_id] = new_chat_id
-        # lastMsg[new_chat_id] = new_message_id
-        print("fwd2user ", new_chat_id, "OK")
-
-
-#     context.bot.copy_message(
-#         message_id=update.message.message_id,
-#         chat_id=user_chat_id,
-#         from_chat_id=update.message.chat_id
-#     )
-
-# def forward_to_user(update, context):
-#     user_chat_id = update.channel_post.reply_to_message.forward_from.id
-#     context.bot.copy_message(
-#         message_id=update.channel_post.message_id,
-#         chat_id=user_chat_id,
-#         from_chat_id=update.channel_post.chat_id
-#     )
 
 def setup_dispatcher(dp):
     dp.add_handler(CommandHandler('start', start))
     dp.add_handler(MessageHandler(Filters.regex('^Задать вопрос$'), new_question))
     dp.add_handler(MessageHandler(Filters.regex('^Вопрос решен$'), close_problem))
-    # dp.add_handler(CommandHandler('problem_closed', close_problem))
-    dp.add_handler(CommandHandler('stop', close_problem))
-    #     dp.add_handler(CallbackQueryHandler(new_question))
-    #     dp.add_handler(MessageHandler(Filters. 'ask_qustion', new_question))
-    dp.add_handler(MessageHandler(Filters.chat_type.private, forward_to_chat))
-    dp.add_handler(MessageHandler(Filters.chat(TELEGRAM_SUPERCHAT_ID) & Filters.reply, forward_to_user))
+
+    dp.add_handler(MessageHandler(Filters.chat_type.private, handle_user_message))
+
+    dp.add_handler(MessageHandler(Filters.chat(main_chat) & Filters.reply, handle_curator_message))
+
     dp.add_handler(
-        MessageHandler(Filters.chat(TELEGRAM_SUPERCHAT_ID) & Filters.forwarded_from(chat_id=TELEGRAM_SUPPORT_CHAT_ID),
+        MessageHandler(Filters.chat(main_chat) & Filters.forwarded_from(chat_id=main_channel),
                        update_pinned))
+
+    for curator_channel, curator_chat in curators.items():
+        dp.add_handler(MessageHandler(Filters.chat(curator_chat) & Filters.reply, handle_curator_message))
+        dp.add_handler(
+            MessageHandler(Filters.chat(int(curator_chat)) & Filters.forwarded_from(chat_id=int(curator_channel)),
+                           update_pinned))
+
+    dp.add_handler(MessageHandler(Filters.all, handle_message))
     dp.add_handler(CallbackQueryHandler(first_submenu,
                                         pattern='^.*es.*$'))
     return dp
 
 
-# linked_chat_id
+def new_question(update, context):
+    user_telegram_id = update.message.from_user.id
+
+    if not check_by_telegram_id(user_telegram_id):
+        update.message.reply_text(
+            'Вы не авторизованы')
+        return
+
+    custom_keyboard = [['Вопрос решен']]
+    user_chat_id = update.message.chat.id
+
+    if not user_chat_id in user_questions:
+        reply_markup = ReplyKeyboardMarkup(keyboard=custom_keyboard, one_time_keyboard=False, resize_keyboard=True)
+        update.message.reply_text("Опишите свой вопрос и нажмите отправить", reply_markup=reply_markup)
+        user_questions[user_chat_id] = {
+            'status': 0,
+            'username': find_user_by_telegram(user_telegram_id)['phone']
+        }
+        # user_questions[user_chat_id]['status'] = 2
+
+    elif user_questions[user_chat_id]['status'] == 4:
+        pass;
+    else:
+        reply_markup = ReplyKeyboardMarkup(keyboard=custom_keyboard, one_time_keyboard=False, resize_keyboard=True)
+        update.message.reply_text("У вас уже задан вопрос", reply_markup=reply_markup)
+
+
+def handle_user_message(update, context):
+    user_chat_id = update.message.chat.id
+
+    custom_keyboard = [['Задать вопрос']]
+    reply_markup = ReplyKeyboardMarkup(custom_keyboard, one_time_keyboard=False, resize_keyboard=True)
+
+    user_telegram_id = update.message.from_user.id
+
+    if not check_by_telegram_id(user_telegram_id):
+        user_in_system = check_and_insert(update.message.text, user_telegram_id)
+        if user_in_system is None:
+            update.message.reply_text(
+                'Не найдено активного курса с таким номером')
+            return
+        elif not user_in_system:
+            update.message.reply_text(
+                'Номер уже активирован')
+            return
+        elif user_in_system:
+            update.message.reply_text(
+                'Чтобы задать вопрос нажмите кнопку "Задать вопрос"',
+                reply_markup=reply_markup)
+        return
+
+    if not user_chat_id in user_questions:
+        custom_keyboard = [['Задать вопрос']]
+        reply_markup = ReplyKeyboardMarkup(custom_keyboard, one_time_keyboard=False, resize_keyboard=True)
+        update.message.reply_text('Чтобы задать вопрос нажмите кнопку "Задать вопрос"', reply_markup=reply_markup)
+    elif user_questions[user_chat_id]['status'] == 0:
+        if not update.message.text:
+            custom_keyboard = [['Вопрос решен']]
+            reply_markup = ReplyKeyboardMarkup(keyboard=custom_keyboard, one_time_keyboard=False, resize_keyboard=True)
+            update.message.reply_text("Вопрос должен быть текстовым!", reply_markup=reply_markup)
+        else:
+
+            new_message = context.bot.send_message(
+                chat_id=main_channel,
+                text=(user_questions[user_chat_id]['username'] + '\n' + update.message.text)
+            )
+
+            user_questions[user_chat_id]['status'] = 1
+            user_questions[user_chat_id]['curator_id'] = get_curator()
+            user_questions[user_chat_id]['main_channel_message_id'] = new_message.message_id
+
+            new_message_to_curator = context.bot.send_message(
+                chat_id=user_questions[user_chat_id]['curator_id'],
+                text=(user_questions[user_chat_id]['username'] + '\n' + update.message.text)
+            )
+            user_questions[user_chat_id]['curator_channel_message_id'] = new_message_to_curator.message_id
+    elif user_questions[user_chat_id]['status'] == 1:
+        update.message.reply_text("Ожидайте, подбирается куратор.")
+    elif user_questions[user_chat_id]['status'] == 2:
+
+        to_main_chat = context.bot.copy_message(
+            chat_id=main_chat,
+            reply_to_message_id=user_questions[user_chat_id]['main_chat_message_id'],
+            message_id=update.message.message_id,
+            from_chat_id=update.message.chat_id
+        )
+        to_curator_chat = context.bot.copy_message(
+            chat_id=curators[user_questions[user_chat_id]['curator_id']],
+            reply_to_message_id=user_questions[user_chat_id]['curator_chat_message_id'],
+            message_id=update.message.message_id,
+            from_chat_id=update.message.chat_id
+        )
+    elif user_questions[user_chat_id]['status'] == 4:
+        custom_keyboard = [['Задать вопрос']]
+        reply_markup = ReplyKeyboardMarkup(keyboard=custom_keyboard, one_time_keyboard=False, resize_keyboard=True)
+        update.message.reply_text("Спасибо за ответ!", reply_markup=reply_markup)
+        last = user_questions.pop(user_chat_id, None)
+
+        to_main_chat = context.bot.copy_message(
+            chat_id=main_chat,
+            reply_to_message_id=last['main_chat_message_id'],
+            message_id=update.message.message_id,
+            from_chat_id=update.message.chat_id
+        )
+
+
+def close_problem(update, context):
+    user_chat_id = update.message.chat.id
+    if not user_chat_id in user_questions or user_questions[user_chat_id]['status'] == 0:
+        custom_keyboard = [['Задать вопрос']]
+        reply_markup = ReplyKeyboardMarkup(custom_keyboard, one_time_keyboard=False, resize_keyboard=True)
+        update.message.reply_text('Вы не задали свой вопрос', reply_markup=reply_markup)
+
+    elif user_questions[user_chat_id]['status'] == 2:
+
+        reply_markup = on_end_estimate_keyboard()
+        update.message.reply_text("Вопрос закрыт, поставьте оценку", reply_markup=reply_markup)
+
+        context.bot.send_message(
+            chat_id=main_chat,
+            text='Вопрос закрыт пользователем',
+            reply_to_message_id=user_questions[user_chat_id]['main_chat_message_id']
+        )
+
+        context.bot.send_message(
+            chat_id=curators[user_questions[user_chat_id]['curator_id']],
+            text='Вопрос закрыт пользователем',
+            reply_to_message_id=user_questions[user_chat_id]['curator_chat_message_id']
+        )
+        user_questions[user_chat_id]['status'] = 3
+    elif user_questions[user_chat_id]['status'] == 3:
+        update.message.reply_text("Пожалуйста, поставьте оценку", reply_markup=on_end_estimate_keyboard())
+
+
+def handle_message(update, context):
+    pass;
+
+
 def on_end_estimate_keyboard():
     keyboard = [[InlineKeyboardButton('1', callback_data='es1'), InlineKeyboardButton('2', callback_data='es2')],
                 [InlineKeyboardButton('3', callback_data='es3'), InlineKeyboardButton('4', callback_data='es4')],
@@ -350,25 +220,113 @@ def on_end_estimate_keyboard():
     return InlineKeyboardMarkup(keyboard)
 
 
-def first_submenu(bot, update):
+def get_curator():
+    actual_curator = curators_queue.pop(0)
+    curators_queue.append(actual_curator)
+    return actual_curator
+
+
+# def get_actual_curator():
+
+def update_pinned(update, context):
+    cht = context.bot.getChat(update.message.chat.id)
+    pndmsg = cht.pinned_message
+    check_message_id = pndmsg.forward_from_message_id
+    if update.message.forward_from_chat.id in curators.keys():
+        for user_chat_id, user_question in user_questions.items():
+            if user_question['curator_channel_message_id'] == check_message_id:
+                user_questions[user_chat_id]['curator_chat_message_id'] = pndmsg.message_id
+                user_questions[user_chat_id]['status'] = 2
+                break
+    else:
+        for user_chat_id, user_question in user_questions.items():
+            if user_question['main_channel_message_id'] == check_message_id:
+                user_questions[user_chat_id]['main_chat_message_id'] = pndmsg.message_id
+                user_questions[user_chat_id]['status'] = 2
+                break
+
+
+def handle_curator_message(update, context):
+    reply_message_id = update.message.reply_to_message.message_id
+    for user_chat_id, user_question in user_questions.items():
+        if (user_question['curator_chat_message_id'] == reply_message_id or user_question[
+            'main_chat_message_id'] == reply_message_id) and user_question['status'] <= 2:
+            to_user = context.bot.copy_message(
+                chat_id=user_chat_id,
+                # reply_to_message_id=user_questions[user_chat_id]['main_chat_message_id'],
+                message_id=update.message.message_id,
+                from_chat_id=update.message.chat_id
+            )
+
+            if user_question['main_chat_message_id'] != reply_message_id:
+                caption = 'Ответ куратора'
+                if update.message.caption:
+                    caption = 'Ответ куратора\n' + update.message.caption
+
+                to_main_chat = context.bot.copy_message(
+                    chat_id=main_chat,
+                    reply_to_message_id=user_questions[user_chat_id]['main_chat_message_id'],
+                    message_id=update.message.message_id,
+                    from_chat_id=update.message.chat_id,
+                    caption=caption
+                )
+                if update.message.text:
+                    text = 'Ответ куратора: \n' + update.message.text
+                    context.bot.editMessageText(
+                        chat_id=main_chat,
+                        message_id=to_main_chat.message_id,
+                        text=text
+                    )
+            else:
+                caption = 'Ответ методиста'
+                if update.message.caption:
+                    caption = 'Ответ методиста\n' + update.message.caption
+
+                to_main_chat = context.bot.copy_message(
+                    chat_id=curators[user_questions[user_chat_id]['curator_id']],
+                    reply_to_message_id=user_questions[user_chat_id]['curator_chat_message_id'],
+                    message_id=update.message.message_id,
+                    from_chat_id=update.message.chat_id,
+                    caption=caption
+                )
+                if update.message.text:
+                    text = 'Ответ методиста: \n' + update.message.text
+                    context.bot.editMessageText(
+                        chat_id=curators[user_questions[user_chat_id]['curator_id']],
+                        message_id=to_main_chat.message_id,
+                        text=text
+                    )
+
+
+def first_submenu(update, context):
     custom_keyboard = [['Задать вопрос']]
     reply_markup = ReplyKeyboardMarkup(custom_keyboard, one_time_keyboard=False, resize_keyboard=True)
     # bot.callback_query.message.reply_text("Спасибо за оценку", reply_markup=reply_markup)
 
-    estimate_string = update.match.string
+    estimate_string = context.match.string
     estimate = int(re.sub("[^0-9]", "", estimate_string))
 
-    if is_estimated.get(bot.callback_query.message.chat_id) != None and not is_estimated[
-        bot.callback_query.message.chat_id]:
-        print(estimate)
-        bot.callback_query.message.reply_text("Спасибо за оценку", reply_markup=reply_markup)
-        is_estimated[bot.callback_query.message.chat_id] = True
-        if estimate <= 3:
-            bot.callback_query.message.reply_text(
-                "Расскажите пожалуйста подробнее, что вам не понравилось в работе куратора:", reply_markup=reply_markup)
-            is_estimate_described[bot.callback_query.message.chat_id] = False
-    else:
-        bot.callback_query.message.reply_text("Оценка уже поставлена", reply_markup=reply_markup)
+    user_chat_id = update.callback_query.message.chat_id
 
-def auth(user_telegram_id):
-    is_found = check_by_telegram_id(user_telegram_id)
+    if user_chat_id in user_questions.keys() and user_questions[user_chat_id]['status'] is not None and \
+            user_questions[user_chat_id]['status'] == 3:
+
+        update.callback_query.message.reply_text("Спасибо за оценку", reply_markup=reply_markup)
+        user_questions[user_chat_id]['status'] = 4
+
+        context.bot.send_message(
+            chat_id=main_chat,
+            text='Оценка пользователя ' + str(estimate) + " из 5",
+            reply_to_message_id=user_questions[user_chat_id]['main_chat_message_id']
+        )
+
+        if estimate <= 3:
+            update.callback_query.message.reply_text(
+                "Расскажите пожалуйста подробнее, что вам не понравилось в работе куратора:", reply_markup=reply_markup)
+        else:
+            user_questions.pop(user_chat_id, None)
+
+    elif user_questions[user_chat_id]['status'] == 4:
+        update.callback_query.message.reply_text(
+            "Оценка уже поставлена,\n Расскажите пожалуйста подробнее, что вам не понравилось в работе куратора:",
+            reply_markup=reply_markup)

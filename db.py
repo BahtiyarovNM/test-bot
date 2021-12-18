@@ -33,7 +33,7 @@ def find_user_by_telegram(telegram_id):
     try:
         with connection.cursor() as cursor:
 
-            sql = "SELECT `user_telegram_id`,`is_active`,`expiration_date` FROM `user_expiration_dates` WHERE `user_telegram_id`=%s"
+            sql = "SELECT `user_telegram_id`,`is_active`,`expiration_date`,`phone`  FROM `user_expiration_dates` WHERE `user_telegram_id`=%s"
             cursor.execute(sql, (telegram_id,))
             result = cursor.fetchone()
 
@@ -120,6 +120,4 @@ def check_by_telegram_id(telegram_id):
     else:
         return False
 
-response = check_by_telegram_id(405968842)
-print(response)
 
